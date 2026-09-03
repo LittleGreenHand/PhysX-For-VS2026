@@ -3,15 +3,16 @@ SETLOCAL EnableDelayedExpansion
 
 :: Check if at least one argument is provided (preset)
 if "%~1"=="" (
-    echo You must specify a preset: e.g. vc17win64...
+    echo You must specify a preset: e.g. vc18win64...
     exit /B 1
 )
 
 :: Set the preset based on the argument
 set "PRESET=%1"
+if not defined PHYSX_MSBUILD_EXE set "PHYSX_MSBUILD_EXE=msbuild"
 
 :: Extract the Visual Studio version from the preset
-set "VS_PREFIX=%PRESET:~0,4%"  :: Get the first 4 characters (vc15, vc16, vc17)
+set "VS_PREFIX=%PRESET:~0,4%"  :: Get the first 4 characters (vc15, vc16, vc17, vc18)
 
 :: Determine the correct Visual Studio version based on the preset prefix
 if "%VS_PREFIX%" == "vc15" (
@@ -20,6 +21,8 @@ if "%VS_PREFIX%" == "vc15" (
     set "VS_VERSION=[16.0,17.0)"
 ) else if "%VS_PREFIX%" == "vc17" (
     set "VS_VERSION=[17.0,18.0)"
+) else if "%VS_PREFIX%" == "vc18" (
+    set "VS_VERSION=[18.0,19.0)"
 ) else (
     echo Unsupported Visual Studio version in preset: %PRESET%
     exit /B 1
@@ -42,22 +45,15 @@ if not "%BUILD_CONFIG%"=="debug" if not "%BUILD_CONFIG%"=="release" if not "%BUI
 IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer" (
     set "VS_INSTALLER_DIR=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer"
     echo VS_INSTALLER_DIR: "!VS_INSTALLER_DIR!"
-    
-    :: Check if VS_INSTALLER_DIR is already in PATH
-    echo !PATH! | findstr /i /c:"!VS_INSTALLER_DIR!" >nul
-    if errorlevel 1 (
-        set "PATH=!PATH!;!VS_INSTALLER_DIR!"
-        echo Updated PATH: !PATH!
-    ) else (
-        echo VS_INSTALLER_DIR is already in PATH
-    )
 )
 
 :: Use vswhere to locate the specified Visual Studio installation
-for /f "usebackq tokens=*" %%i in (`vswhere -version "%VS_VERSION%" -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+pushd "!VS_INSTALLER_DIR!"
+for /f "usebackq tokens=*" %%i in (`vswhere.exe -version "%VS_VERSION%" -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
     set "VSINSTALLPATH=%%i"
     echo VSINSTALLPATH: "!VSINSTALLPATH!"
 )
+popd
 
 :: Check if VSINSTALLPATH is set
 if not defined VSINSTALLPATH (
@@ -116,10 +112,12 @@ set "PRESET_LENGTH=!PRESET:~-10!"
 
 if "%PRESET_LENGTH%" == "%SUFFIX%" (
     :: Build INSTALL.vcxproj when the preset ends with -carbonite
-    msbuild /property:configuration=%1 "%ROOT_PATH%\%PRESET%\INSTALL.vcxproj" /maxcpucount /t:Rebuild /v:m
+    "!PHYSX_MSBUILD_EXE!" /property:configuration=%1 "%ROOT_PATH%\%PRESET%\INSTALL.vcxproj" /maxcpucount /t:Rebuild /v:m
 ) else (
-    :: Build PhysXSDK.sln when the preset does not end with -carbonite
-    msbuild /property:configuration=%1 "%ROOT_PATH%\%PRESET%\PhysXSDK.sln" /maxcpucount /t:Rebuild /v:m
+    :: CMake 4 with VS 2026 emits .slnx; older generators emit .sln.
+    set "SOLUTION=%ROOT_PATH%\%PRESET%\PhysXSDK.sln"
+    if exist "%ROOT_PATH%\%PRESET%\PhysXSDK.slnx" set "SOLUTION=%ROOT_PATH%\%PRESET%\PhysXSDK.slnx"
+    "!PHYSX_MSBUILD_EXE!" /property:configuration=%1 "!SOLUTION!" /maxcpucount /t:Rebuild /v:m
 )
 
 if errorlevel 1 (

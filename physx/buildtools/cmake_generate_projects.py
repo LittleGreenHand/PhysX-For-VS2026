@@ -215,7 +215,7 @@ class CMakePreset:
                 if os.path.isfile(nvcc_path):
                     outString = outString + ' -DCMAKE_CUDA_COMPILER=' + nvcc_path
 
-                if self.compiler in ['vc15', 'vc16', 'vc17'] and self.generator != 'ninja':
+                if self.compiler in ['vc15', 'vc16', 'vc17', 'vc18'] and self.generator != 'ninja':
                     outString = outString + ' -T cuda=' + cuda_path
                 # TODO: Need to do the same for gcc (aarch64) when we package it with Packman
                 elif self.compiler == 'clang':
@@ -238,7 +238,8 @@ class CMakePreset:
         vs_versions = {
             'vc15': '\"Visual Studio 15 2017\"',
             'vc16': '\"Visual Studio 16 2019\"',
-            'vc17': '\"Visual Studio 17 2022\"'
+            'vc17': '\"Visual Studio 17 2022\"',
+            'vc18': '\"Visual Studio 18 2026\"'
         }
 
         # Visual studio
