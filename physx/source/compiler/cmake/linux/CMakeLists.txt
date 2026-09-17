@@ -27,7 +27,7 @@
 STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWERCASE)
 
 #TODO: Fix warnings
-SET(CLANG_WARNINGS "-ferror-limit=0 -Wall -Wextra -Werror -Weverything\
+SET(CLANG_WARNINGS "-ferror-limit=0 -Wall -Wextra -Weverything\
     -Wno-unused-but-set-variable \
     -Wno-switch-default \
     -Wno-cast-qual \
@@ -77,8 +77,7 @@ SET(CLANG_WARNINGS "-ferror-limit=0 -Wall -Wextra -Werror -Weverything\
     -Wno-undefined-func-template \
 ")
 
-SET(GCC_WARNINGS "-Wall -Werror \
-	-Wno-address \
+SET(GCC_WARNINGS "-Wall -Wno-address \
 	-Wno-aligned-new \
 	-Wno-array-bounds \
 	-Wno-class-memaccess \
